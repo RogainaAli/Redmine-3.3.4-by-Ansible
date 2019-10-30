@@ -1,0 +1,19 @@
+---
+- name: Copy Apache virtual host file 
+  copy:
+    src: /home/rogaina/redmine/roles/Apache2/tasks/master.conf
+    dest: /etc/apache2/sites-available/master.conf
+    mode: '0664'
+
+- name: enabled mod_rewrite
+  apache2_module: name=rewrite state=present
+  notify:
+    - restart apache2
+
+- name: Disable default-vhost
+  command: a2dissite 000-default.conf
+
+- name: Enable redmine vhost
+  command: a2ensite master.conf
+  notify:
+    - restart apache2

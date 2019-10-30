@@ -1,0 +1,31 @@
+---
+- name: Install a list of prequisites packages of phusion-passenger
+  apt:
+    name: "{{ packages }}"
+  vars:
+    packages:
+    - dirmngr 
+    - gnupg
+    - apt-transport-https 
+    - ca-certificates
+
+- name: Add an apt key by id from a keyserver
+  apt_key:
+    keyserver: hkp://keyserver.ubuntu.com:80
+    id: 561F9B9CAC40B2F7
+
+
+- apt_repository:
+    repo: deb https://oss-binaries.phusionpassenger.com/apt/passenger trusty main
+    state: present
+    filename: /etc/apt/sources.list.d/passenger.list
+
+- name: Install libapache2-mod-passenger
+  apt:
+    name: libapache2-mod-passenger
+
+- lineinfile:
+    path: /etc/apache2/mods-available/passenger.conf
+    line: 'PassengerDefaultUser www-data'
+    insertbefore: </IfModule>
+

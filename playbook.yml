@@ -1,0 +1,24 @@
+---
+- hosts: redmine_servers
+  remote_user: rogaina
+  sudo: true
+
+  vars_files:
+    - secret
+
+  vars:
+    - db_name: redmine
+    - db_user: redmine
+    - db_password: my_password
+
+  roles:
+    - mysql
+    - server_setup
+    - redmine-3.3.4
+    - passenger
+    - Apache2
+
+  handlers:
+    - name: restart apache2
+      service: name=apache2 state=restarted
+

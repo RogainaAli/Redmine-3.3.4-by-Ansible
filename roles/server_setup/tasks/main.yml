@@ -1,0 +1,36 @@
+---
+- name: apt-get update the server
+  apt: update_cache=yes
+
+- name: Install a list of prequisites packages
+  apt:
+    name: "{{ packages }}"
+  vars:
+    packages:
+    - libmysqlclient-dev
+    - gcc
+    - build-essential
+    - libssl-dev
+    - libyaml-dev
+    - libcurl4-openssl-dev
+    - gem
+    - apache2-mpm-prefork
+    - apache2-dev
+    - libapr1-dev
+    - libxslt1-dev
+    - checkinstall
+    - libxml2-dev
+    - libmagickwand-dev
+    - imagemagick
+
+- name: add brightbox ruby repository
+  apt_repository: repo='ppa:brightbox/ruby-ng'
+
+- name: apt-get update the server
+  apt: update_cache=yes
+
+- name: install ruby 2.4
+  apt: name=ruby2.4 state=present
+
+- name: install ruby 2.4 dev headers
+  apt: name=ruby2.4-dev state=present

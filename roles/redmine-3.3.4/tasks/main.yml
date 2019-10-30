@@ -1,0 +1,97 @@
+---
+- name: Create a Directory /opt/redmine
+  become: yes
+  file:
+    path: /opt/redmine
+    state: directory
+    mode: 0775
+    owner: www-data
+    group: www-data
+
+- name: Unarchive redmine file that needs to be downloaded
+  unarchive:
+    src: https://www.redmine.org/releases/redmine-3.3.4.tar.gz
+    dest: /opt/redmine
+    remote_src: yes
+
+- name: Copy database file with owner and permissions
+  copy:
+    src: /home/rogaina/redmine/roles/redmine-3.3.4/database.yml
+    dest: /opt/redmine/redmine-3.3.4/config/database.yml
+    owner: rogaina
+    group: rogaina
+    mode: '0664'
+
+- name: update version of rails from 4.2.7.1 to 4.2.8
+  lineinfile:
+    path: /opt/redmine/redmine-3.3.4/Gemfile
+    regexp: '^gem "rails", "4.2.7.1"'
+    line: gem "rails", "4.2.8"
+
+- name: Change the working directory to /opt/redmine/redmine-3.3.4 and run the command to install bundler -v 1.17.1
+  command: gem install bundler -v 1.17.1
+  args:
+    chdir: /opt/redmine/redmine-3.3.4
+
+- name: Change the working directory to /opt/redmine/redmine-3.3.4 and run the command to update rails
+  command: bundle update rails
+  args:
+    chdir: /opt/redmine/redmine-3.3.4
+
+- name: Change the working directory to /opt/redmine/redmine-3.3.4 and run the command to bundle install --without development test
+  command: bundle install --without development test
+  become: yes
+  args:
+    chdir: /opt/redmine/redmine-3.3.4
+
+- name: Change the working directory to /opt/redmine/redmine-3.3.4 and run the command to bundle exec rake generate_secret_token
+  command: bundle exec rake generate_secret_token
+  become: yes
+  args:
+    chdir: /opt/redmine/redmine-3.3.4
+
+- name: DB Migrate
+  environment:
+    RAILS_ENV: production
+  shell: /opt/redmine/redmine-3.3.4/bin/bundle exec /opt/redmine/redmine-3.3.4/bin/rake db:migrate
+  args:
+    chdir: /opt/redmine/redmine-3.3.4
+  become: true
+
+- name: Populate default data
+  shell: /opt/redmine/redmine-3.3.4/bin/bundle exec /opt/redmine/redmine-3.3.4/bin/rake redmine:load_default_data
+  become: true
+  args:
+    chdir: /opt/redmine/redmine-3.3.4
+  environment:
+    REDMINE_LANG: en
+    RAILS_ENV: production
+
+
+- name: Recursively change ownership of set of directories
+  file:
+    path: "{{ item }}"
+    state: directory
+    recurse: yes
+    owner: www-data
+    group: www-data
+    mode: '0755'
+  with_items:
+    - "/opt/redmine/redmine-3.3.4/files"
+    - "/opt/redmine/redmine-3.3.4/log"
+    - "/opt/redmine/redmine-3.3.4/tmp"
+    - "/opt/redmine/redmine-3.3.4/public/plugin_assets"
+
+- name: Change Gemfile.lock file ownership
+  file:
+    path: /opt/redmine/redmine-3.3.4/Gemfile.lock
+    owner: www-data
+    group: www-data
+
+- name: Create a symbolic link for redmine public folder
+  file:
+    src: /opt/redmine/redmine-3.3.4/public/
+    dest: /var/www/redmine
+    owner: www-data
+    group: www-data
+    state: link
